@@ -89,8 +89,6 @@ export const Reports: React.FC = () => {
 
       if (entriesData) {
         setTimeEntries(entriesData);
-        
-        // Calculate stats
         const totalTime = entriesData.reduce((sum, entry) => sum + (entry.duration || 0), 0);
         const totalEarnings = entriesData.reduce((sum, entry) => {
           const rate = entry.projects?.hourly_rate || 0;
@@ -100,8 +98,6 @@ export const Reports: React.FC = () => {
 
         const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         const avgDailyTime = totalTime / days;
-
-        // Find top project
         const projectTimes = entriesData.reduce((acc, entry) => {
           const projectName = entry.projects?.name || 'Unknown';
           acc[projectName] = (acc[projectName] || 0) + (entry.duration || 0);
@@ -116,8 +112,6 @@ export const Reports: React.FC = () => {
           avgDailyTime,
           topProject,
         });
-
-        // Prepare chart data
         const dailyData: Record<string, number> = {};
         const projectTimeData: Record<string, { time: number, color: string }> = {};
 
@@ -149,8 +143,6 @@ export const Reports: React.FC = () => {
         setChartData(chartData);
         setProjectData(projectData);
       }
-
-      // Fetch projects for filter
       const { data: projectsData } = await supabase
         .from('projects')
         .select('*')

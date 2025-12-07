@@ -47,7 +47,6 @@ export const AdminBoards: React.FC = () => {
 
     setLoading(true);
     try {
-      // First, verify admin status
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -60,8 +59,6 @@ export const AdminBoards: React.FC = () => {
       if (profileError) {
         console.error('Error checking admin status:', profileError);
       }
-
-      // First, verify we can access boards as admin
       console.log('Fetching boards as admin...');
       const { data: boardsData, error: boardsError } = await supabase
         .from('boards')
@@ -86,8 +83,6 @@ export const AdminBoards: React.FC = () => {
         setLoading(false);
         return;
       }
-
-      // Get unique user IDs from boards
       const userIds = [...new Set(boardsData.map(b => b.user_id).filter(Boolean))];
       console.log('User IDs to fetch:', userIds);
       
@@ -116,8 +111,6 @@ export const AdminBoards: React.FC = () => {
       }));
 
       console.log('Boards with users:', boardsWithUsers.length);
-
-      // Fetch task counts for each board
       const boardsWithCounts = await Promise.all(
         boardsWithUsers.map(async (board) => {
           try {
@@ -139,8 +132,6 @@ export const AdminBoards: React.FC = () => {
 
       console.log('Final boards with counts:', boardsWithCounts.length);
       setBoards(boardsWithCounts);
-
-      // Fetch all users for filter dropdown
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('id, email, full_name')

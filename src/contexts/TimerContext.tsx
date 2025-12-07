@@ -100,8 +100,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const startTimer = async (projectId: string, description?: string) => {
     if (!user) return;
-
-    // Stop any existing timer
     if (activeEntry) {
       await stopTimer();
     }

@@ -60,7 +60,6 @@ export const AdminTasks: React.FC = () => {
 
     setLoading(true);
     try {
-      // First, verify admin status
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -73,8 +72,6 @@ export const AdminTasks: React.FC = () => {
       if (profileError) {
         console.error('Error checking admin status:', profileError);
       }
-
-      // Fetch tasks first without joins to avoid RLS issues
       console.log('Fetching tasks as admin...');
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
@@ -100,14 +97,10 @@ export const AdminTasks: React.FC = () => {
         setLoading(false);
         return;
       }
-
-      // Get unique user IDs and board IDs
       const userIds = [...new Set(tasksData.map(t => t.user_id).filter(Boolean))];
       const boardIds = [...new Set(tasksData.map(t => t.board_id).filter(Boolean))];
       console.log('User IDs to fetch:', userIds);
       console.log('Board IDs to fetch:', boardIds);
-
-      // Fetch users and boards separately
       let usersMap = new Map();
       let boardsMap = new Map();
 
@@ -138,8 +131,6 @@ export const AdminTasks: React.FC = () => {
           boardsMap = new Map(boardsData?.map(b => [b.id, b]) || []);
         }
       }
-
-      // Combine the data
       const normalizedTasks = tasksData.map((task: any) => ({
         ...task,
         user: usersMap.get(task.user_id) || { 
@@ -156,8 +147,6 @@ export const AdminTasks: React.FC = () => {
 
       console.log('Normalized tasks:', normalizedTasks.length);
       setTasks(normalizedTasks);
-
-      // Fetch all users for filter dropdown
       const { data: allUsersData, error: allUsersError } = await supabase
         .from('profiles')
         .select('id, email, full_name')

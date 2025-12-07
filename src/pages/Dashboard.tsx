@@ -36,7 +36,6 @@ export const Dashboard: React.FC = () => {
     if (!user) return;
 
     try {
-      // Fetch time entries for stats
       const today = new Date();
       const weekStart = startOfWeek(today);
       const weekEnd = endOfWeek(today);
@@ -62,7 +61,6 @@ export const Dashboard: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (timeEntries) {
-        // Calculate stats
         const todayEntries = timeEntries.filter(entry => 
           new Date(entry.start_time).toDateString() === today.toDateString()
         );
@@ -76,8 +74,6 @@ export const Dashboard: React.FC = () => {
         const todayTime = todayEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
         const weekTime = weekEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
         const monthTime = monthEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
-
-        // Calculate earnings
         const totalEarnings = timeEntries.reduce((sum, entry) => {
           const rate = entry.projects?.hourly_rate || 0;
           const hours = (entry.duration || 0) / 3600;
@@ -90,11 +86,7 @@ export const Dashboard: React.FC = () => {
           monthTime,
           totalEarnings,
         });
-
-        // Recent entries
         setRecentEntries(timeEntries.slice(0, 5));
-
-        // Chart data - last 7 days
         const chartData = [];
         for (let i = 6; i >= 0; i--) {
           const date = new Date();
@@ -110,8 +102,6 @@ export const Dashboard: React.FC = () => {
         }
         setChartData(chartData);
       }
-
-      // Fetch projects
       const { data: projectsData } = await supabase
         .from('projects')
         .select(`

@@ -31,7 +31,6 @@ export const Timer: React.FC = () => {
     if (!user) return;
 
     try {
-      // Fetch projects
       const { data: projectsData } = await supabase
         .from('projects')
         .select(`
@@ -51,8 +50,6 @@ export const Timer: React.FC = () => {
           setSelectedProject(projectsData[0].id);
         }
       }
-
-      // Fetch recent entries
       const { data: entriesData } = await supabase
         .from('time_entries')
         .select(`

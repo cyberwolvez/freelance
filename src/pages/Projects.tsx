@@ -34,7 +34,6 @@ export const Projects: React.FC = () => {
     if (!user) return;
 
     try {
-      // Fetch projects
       const { data: projectsData } = await supabase
         .from('projects')
         .select(`
@@ -50,8 +49,6 @@ export const Projects: React.FC = () => {
       if (projectsData) {
         setProjects(projectsData);
       }
-
-      // Fetch clients
       const { data: clientsData } = await supabase
         .from('clients')
         .select('*')

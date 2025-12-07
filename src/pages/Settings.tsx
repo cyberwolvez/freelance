@@ -70,7 +70,6 @@ export const Settings: React.FC = () => {
           timezone: data.timezone || 'UTC',
         });
       } else {
-        // Create profile if it doesn't exist
         const newProfile = {
           id: user.id,
           email: user.email || '',
