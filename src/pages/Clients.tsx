@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit2, Trash2, Users, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { logActivity } from '../lib/activityLogger';
 
 const colorOptions = [
   '#3B82F6', '#14B8A6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
@@ -64,18 +65,36 @@ export const Clients: React.FC = () => {
       };
 
       if (editingClient) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('clients')
           .update(clientData)
-          .eq('id', editingClient.id);
+          .eq('id', editingClient.id)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logActivity({
+          action: 'updated_client',
+          entityType: 'client',
+          entityId: editingClient.id,
+          details: { clientName: clientData.name },
+        });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('clients')
-          .insert([clientData]);
+          .insert([clientData])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logActivity({
+          action: 'created_client',
+          entityType: 'client',
+          entityId: data.id,
+          details: { clientName: clientData.name },
+        });
       }
 
       setShowModal(false);
@@ -105,12 +124,21 @@ export const Clients: React.FC = () => {
     if (!confirm('Are you sure you want to delete this client? This will also remove them from associated projects.')) return;
 
     try {
+      const client = clients.find(c => c.id === clientId);
       const { error } = await supabase
         .from('clients')
         .delete()
         .eq('id', clientId);
 
       if (error) throw error;
+
+      await logActivity({
+        action: 'deleted_client',
+        entityType: 'client',
+        entityId: clientId,
+        details: { clientName: client?.name },
+      });
+
       fetchClients();
     } catch (error) {
       console.error('Error deleting client:', error);

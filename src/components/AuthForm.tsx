@@ -139,13 +139,6 @@ export const AuthForm: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Demo credentials */}
-        <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials</h3>
-          <p className="text-xs text-gray-600 mb-1">Email: demo@timetracker.com</p>
-          <p className="text-xs text-gray-600">Password: demo123</p>
-        </div>
       </div>
     </div>
   );

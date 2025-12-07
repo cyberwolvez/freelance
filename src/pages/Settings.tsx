@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Clock, Save } from 'lucide-react';
+import { User, Mail, Clock, Save, Lock, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { logActivity } from '../lib/activityLogger';
 
 const timezones = [
   'UTC',
@@ -28,6 +29,18 @@ export const Settings: React.FC = () => {
     email: '',
     timezone: 'UTC',
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -103,6 +116,16 @@ export const Settings: React.FC = () => {
         });
 
       if (error) throw error;
+
+      await logActivity({
+        action: 'updated_profile',
+        entityType: 'profile',
+        entityId: user.id,
+        details: {
+          fullName: formData.full_name,
+          timezone: formData.timezone,
+        },
+      });
 
       setMessage('Settings saved successfully!');
       setTimeout(() => setMessage(''), 3000);
@@ -214,6 +237,130 @@ export const Settings: React.FC = () => {
           >
             <Save className="h-5 w-5" />
             <span>{saving ? 'Saving...' : 'Save Settings'}</span>
+          </button>
+        </form>
+      </div>
+
+      {/* Change Password */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Change Password</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!user) return;
+
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+              setPasswordMessage('New passwords do not match');
+              return;
+            }
+
+            if (passwordData.newPassword.length < 6) {
+              setPasswordMessage('Password must be at least 6 characters');
+              return;
+            }
+
+            setChangingPassword(true);
+            setPasswordMessage('');
+
+            try {
+              const { error: updateError } = await supabase.auth.updateUser({
+                password: passwordData.newPassword,
+              });
+
+              if (updateError) throw updateError;
+
+              await logActivity({
+                action: 'changed_password',
+                entityType: 'profile',
+                entityId: user.id,
+                details: {},
+              });
+
+              setPasswordMessage('Password changed successfully!');
+              setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+              });
+              setTimeout(() => setPasswordMessage(''), 3000);
+            } catch (error: any) {
+              console.error('Error changing password:', error);
+              setPasswordMessage(error.message || 'Failed to change password');
+            } finally {
+              setChangingPassword(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="flex items-center space-x-2">
+                <Lock className="h-4 w-4" />
+                <span>New Password</span>
+              </div>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword.new ? 'text' : 'password'}
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10"
+                placeholder="Enter new password"
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword.new ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="flex items-center space-x-2">
+                <Lock className="h-4 w-4" />
+                <span>Confirm New Password</span>
+              </div>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword.confirm ? 'text' : 'password'}
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10"
+                placeholder="Confirm new password"
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword.confirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          {passwordMessage && (
+            <div className={`p-3 rounded-lg ${
+              passwordMessage.includes('Error') || passwordMessage.includes('do not match') || passwordMessage.includes('must be')
+                ? 'bg-red-50 border border-red-200 text-red-600'
+                : 'bg-green-50 border border-green-200 text-green-600'
+            }`}>
+              {passwordMessage}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={changingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+          >
+            <Lock className="h-5 w-5" />
+            <span>{changingPassword ? 'Changing...' : 'Change Password'}</span>
           </button>
         </form>
       </div>

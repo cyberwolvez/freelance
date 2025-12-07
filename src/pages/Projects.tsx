@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, CreditCard as Edit2, Trash2, FolderOpen, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { logActivity } from '../lib/activityLogger';
 
 const colorOptions = [
   '#3B82F6', '#14B8A6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
@@ -82,18 +83,36 @@ export const Projects: React.FC = () => {
       };
 
       if (editingProject) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('projects')
           .update(projectData)
-          .eq('id', editingProject.id);
+          .eq('id', editingProject.id)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logActivity({
+          action: 'updated_project',
+          entityType: 'project',
+          entityId: editingProject.id,
+          details: { projectName: projectData.name, clientId: projectData.client_id },
+        });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('projects')
-          .insert([projectData]);
+          .insert([projectData])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        await logActivity({
+          action: 'created_project',
+          entityType: 'project',
+          entityId: data.id,
+          details: { projectName: projectData.name, clientId: projectData.client_id },
+        });
       }
 
       setShowModal(false);
@@ -127,12 +146,21 @@ export const Projects: React.FC = () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
+      const project = projects.find(p => p.id === projectId);
       const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId);
 
       if (error) throw error;
+
+      await logActivity({
+        action: 'deleted_project',
+        entityType: 'project',
+        entityId: projectId,
+        details: { projectName: project?.name },
+      });
+
       fetchData();
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -141,12 +169,20 @@ export const Projects: React.FC = () => {
 
   const toggleProjectStatus = async (projectId: string, currentStatus: boolean) => {
     try {
+      const project = projects.find(p => p.id === projectId);
       const { error } = await supabase
         .from('projects')
         .update({ is_active: !currentStatus })
         .eq('id', projectId);
 
       if (error) throw error;
+
+      await logActivity({
+        action: currentStatus ? 'deactivated_project' : 'activated_project',
+        entityType: 'project',
+        entityId: projectId,
+        details: { projectName: project?.name, status: !currentStatus ? 'active' : 'inactive' },
+      });
       fetchData();
     } catch (error) {
       console.error('Error updating project status:', error);

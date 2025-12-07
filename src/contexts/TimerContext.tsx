@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { logActivity } from '../lib/activityLogger';
 
 interface TimerContextType {
   activeEntry: any | null;
@@ -136,6 +137,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
+    await logActivity({
+      action: 'started_timer',
+      entityType: 'time_entry',
+      entityId: data.id,
+      details: {
+        projectName: data.projects?.name,
+        description: description || '',
+      },
+    });
+
     setActiveEntry(data);
     setIsRunning(true);
     setElapsedTime(0);
@@ -162,6 +173,16 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Error stopping timer:', error);
       return;
     }
+
+    await logActivity({
+      action: 'stopped_timer',
+      entityType: 'time_entry',
+      entityId: activeEntry.id,
+      details: {
+        projectName: activeEntry.projects?.name,
+        duration: Math.floor((endTime.getTime() - startTime.getTime()) / 1000),
+      },
+    });
 
     setActiveEntry(null);
     setIsRunning(false);
